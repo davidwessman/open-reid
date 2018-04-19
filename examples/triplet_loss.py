@@ -23,10 +23,13 @@ from reid.utils.serialization import load_checkpoint, save_checkpoint
 
 
 def get_data(name, split_id, data_dir, height, width, batch_size, num_instances,
-             workers, combine_trainval):
+             workers, combine_trainval, batch_id):
     root = osp.join(data_dir, name)
 
-    dataset = datasets.create(name, root, split_id=split_id)
+    if name == 'synthetic':
+        dataset = datasets.create(name, root, split_id=split_id, batch_id=batch_id)
+    else:
+        dataset = datasets.create(name, root, split_id=split_id)
 
     normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
@@ -89,7 +92,7 @@ def main(args):
     dataset, num_classes, train_loader, val_loader, test_loader = \
         get_data(args.dataset, args.split, args.data_dir, args.height,
                  args.width, args.batch_size, args.num_instances, args.workers,
-                 args.combine_trainval)
+                 args.combine_trainval, args.batch_id)
 
     # Create model
     # Hacking here to let the classifier be the last feature embedding layer
@@ -182,6 +185,7 @@ if __name__ == '__main__':
     parser.add_argument('--combine-trainval', action='store_true',
                         help="train and val sets together for training, "
                              "val set alone for validation")
+    parser.add_argument('--batch-id', type=str, default='2018-03-26-16:21:21')
     parser.add_argument('--num-instances', type=int, default=4,
                         help="each minibatch consist of "
                              "(batch_size // num_instances) identities, and "

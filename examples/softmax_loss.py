@@ -21,10 +21,13 @@ from reid.utils.serialization import load_checkpoint, save_checkpoint
 
 
 def get_data(name, split_id, data_dir, height, width, batch_size, workers,
-             combine_trainval):
+             combine_trainval, batch_id):
     root = osp.join(data_dir, name)
 
-    dataset = datasets.create(name, root, split_id=split_id)
+    if name == 'synthetic':
+        dataset = datasets.create(name, root, split_id=split_id, batch_id=batch_id)
+    else:
+        dataset = datasets.create(name, root, split_id=split_id)
 
     normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
@@ -83,7 +86,7 @@ def main(args):
     dataset, num_classes, train_loader, val_loader, test_loader = \
         get_data(args.dataset, args.split, args.data_dir, args.height,
                  args.width, args.batch_size, args.workers,
-                 args.combine_trainval)
+                 args.combine_trainval, args.batch_id)
 
     # Create model
     model = models.create(args.arch, num_features=args.features,
@@ -185,6 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--combine-trainval', action='store_true',
                         help="train and val sets together for training, "
                              "val set alone for validation")
+    parser.add_argument('--batch-id', type=str, default='2018-03-26-16:21:21')
     # model
     parser.add_argument('-a', '--arch', type=str, default='resnet50',
                         choices=models.names())
