@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 import os.path as osp
+import random
 
 from ..utils.data import Dataset
 from ..utils.osutils import mkdir_if_missing
@@ -79,6 +80,11 @@ class Market1501(Dataset):
         trainval_pids = register('bounding_box_train')
         gallery_pids = register('bounding_box_test')
         query_pids = register('query')
+
+        # Only select 100 of gallery+query
+        random.seed(1)
+        gallery_pids = random.sample(gallery_pids, k=100)
+        query_pids = random.sample(query_pids, k=100)
         assert query_pids <= gallery_pids
         assert trainval_pids.isdisjoint(gallery_pids)
 

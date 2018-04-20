@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 import os.path as osp
+import random
 
 from ..utils.data import Dataset
 from ..utils.osutils import mkdir_if_missing
@@ -83,7 +84,15 @@ class DukeMTMC(Dataset):
         trainval_pids = register('bounding_box_train')
         gallery_pids = register('bounding_box_test')
         query_pids = register('query')
-        assert query_pids <= gallery_pids
+
+        # Only select 100 of gallery+query
+        random.seed(1)
+        gallery_pids = sorted(set(random.sample(gallery_pids, k=100)))
+        query_pids = sorted(set(random.sample(query_pids, k=100)))
+        print('Gallery: %d %s' % (len(gallery_pids), gallery_pids))
+        print('Query: %d %s' % (len(query_pids), query_pids))
+
+        # assert query_pids <= gallery_pids
         assert trainval_pids.isdisjoint(gallery_pids)
 
         # Save meta information into a json file

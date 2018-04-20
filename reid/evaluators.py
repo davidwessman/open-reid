@@ -93,6 +93,7 @@ def evaluate_all(distmat, query=None, gallery=None,
         'market1501': dict(separate_camera_set=False,
                            single_gallery_shot=False,
                            first_match_break=True)}
+
     cmc_scores = {name: cmc(distmat, query_ids, gallery_ids,
                             query_cams, gallery_cams, **params)
                   for name, params in cmc_configs.items()}
@@ -106,8 +107,39 @@ def evaluate_all(distmat, query=None, gallery=None,
                       cmc_scores['market1501'][k - 1]))
 
     # Use the allshots cmc top-1 score for validation criterion
-    return cmc_scores['cuhk03']
+    return cmc_scores['allshots'][0]
 
+
+def evaluate_all_cuhk(distmat, query=None, gallery=None,
+                      query_ids=None, gallery_ids=None,
+                      query_cams=None, gallery_cams=None):
+    if query is not None and gallery is not None:
+        query_ids = [pid for _, pid, _ in query]
+        gallery_ids = [pid for _, pid, _ in gallery]
+        query_cams = [cam for _, _, cam in query]
+        gallery_cams = [cam for _, _, cam in gallery]
+    else:
+        assert (query_ids is not None and gallery_ids is not None
+                and query_cams is not None and gallery_cams is not None)
+
+    # Compute mean AP
+    mAP = mean_ap(distmat, query_ids, gallery_ids, query_cams, gallery_cams)
+    print('Mean AP: {:4.1%}'.format(mAP))
+
+    # Compute all kinds of CMC scores
+    cmc_configs = {
+        'allshots': dict(separate_camera_set=False,
+                         single_gallery_shot=False,
+                         first_match_break=False),
+        'cuhk03': dict(separate_camera_set=True,
+                       single_gallery_shot=True,
+                       first_match_break=False),
+        'market1501': dict(separate_camera_set=False,
+                           single_gallery_shot=False,
+                           first_match_break=True)}
+
+    return cmc(distmat, query_ids, gallery_ids, query_cams,
+               gallery_cams, **cmc_configs['cuhk03'])
 
 class Evaluator(object):
     def __init__(self, model):
@@ -118,3 +150,8 @@ class Evaluator(object):
         features, _ = extract_features(self.model, data_loader)
         distmat = pairwise_distance(features, query, gallery, metric=metric)
         return evaluate_all(distmat, query=query, gallery=gallery)
+
+    def test(self, data_loader, query, gallery, metric=None):
+        features, _ = extract_features(self.model, data_loader)
+        distmat = pairwise_distance(features, query, gallery, metric=metric)
+        return evaluate_all_cuhk(distmat, query=query, gallery=gallery)
